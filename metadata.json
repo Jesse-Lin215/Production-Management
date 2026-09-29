@@ -1,0 +1,8 @@
+{
+  "name": "Remix: 生产管理",
+  "description": "Manufacturing production work order routing and operation editor with drag-and-drop sorting.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
