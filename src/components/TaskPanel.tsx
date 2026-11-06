@@ -660,7 +660,7 @@ export default function TaskPanel({
         >
           {isSidebarOpen && (
             <div className="flex flex-col h-full w-[300px] overflow-hidden">
-              <div className="px-4 py-3 border-b border-slate-200/70 flex items-center justify-between bg-slate-50/50">
+              <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between bg-white">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-bold text-slate-800">生产任务</span>
                   <button 
@@ -711,7 +711,7 @@ export default function TaskPanel({
       )}
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 bg-[#f8fafc] overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 bg-white overflow-hidden">
         {/* 第五页生产任务三态主页签：待下发任务 / 已下发任务 / 外协任务 */}
         <div className="bg-white border-b border-slate-200 px-6 pt-3 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-8">
@@ -813,7 +813,7 @@ export default function TaskPanel({
         </div>
 
         {/* Content Table Area */}
-        <div className="flex-1 overflow-x-auto overflow-y-auto bg-slate-50 p-6 relative custom-scrollbar">
+        <div className="flex-1 overflow-x-auto overflow-y-auto bg-white p-6 relative custom-scrollbar">
           {filteredTasks.length === 0 ? (
             <div className="bg-white border border-slate-200 rounded-lg p-12 text-center text-slate-400">
               <Package className="w-10 h-10 opacity-20 mx-auto mb-3" />
@@ -828,7 +828,7 @@ export default function TaskPanel({
           ) : (
             <div className="bg-white border border-slate-200 rounded-lg shadow-xs min-w-max">
               <table className="w-full text-left border-collapse whitespace-nowrap">
-                <thead className="bg-slate-50/80 sticky top-0 shadow-xs border-b border-slate-200 z-10">
+                <thead className="bg-white sticky top-0 shadow-xs border-b border-slate-200 z-10">
                   <tr className="text-[12px] font-bold text-slate-600 tracking-wider">
                     {!readOnly && activeTab === 'UNISSUED' && (
                       <th className="px-3 py-3.5 text-center w-10">
@@ -886,7 +886,7 @@ export default function TaskPanel({
                     <th className="px-4 py-3.5 text-center">备注</th>
                     {/* 13. 操作 */}
                     {!readOnly && (
-                      <th className="px-4 py-3.5 text-center sticky right-0 z-20 bg-slate-50 border-l border-slate-200/80 shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.06)]">
+                      <th className="px-4 py-3.5 text-center sticky right-0 z-20 bg-white border-l border-slate-200 shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.06)]">
                         操作
                       </th>
                     )}

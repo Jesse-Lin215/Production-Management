@@ -4,14 +4,14 @@ import {
   Layers, Users, HeartHandshake, ShoppingBag, Headphones, ShoppingCart, 
   Factory, Box, Coins, BarChart, MessageSquare, LayoutDashboard, GitBranch,
   ClipboardList, CheckSquare, FileText, BookOpen, Clock, Truck, CreditCard,
-  Calculator, PieChart
+  Calculator, PieChart, User, Cpu
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 interface MainLayoutProps {
   children: React.ReactNode;
-  activeMenu?: 'orders' | 'tasks';
-  onSelectMenu?: (menu: 'orders' | 'tasks') => void;
+  activeMenu?: 'orders' | 'tasks' | 'outsourcing' | 'outsourcing-apply';
+  onSelectMenu?: (menu: 'orders' | 'tasks' | 'outsourcing' | 'outsourcing-apply') => void;
 }
 
 const SIDEBAR_ITEMS = [
@@ -78,6 +78,8 @@ const SIDEBAR_ITEMS = [
     subItems: [
       { icon: Layers, label: '工单管理', key: 'orders' },
       { icon: ClipboardList, label: '生产任务', key: 'tasks' },
+      { icon: Cpu, label: '外协工单', key: 'outsourcing' },
+      { icon: BookOpen, label: '外协申请单', key: 'outsourcing-apply' },
     ]
   },
   { 
@@ -166,7 +168,7 @@ export default function MainLayout({ children, activeMenu = 'orders', onSelectMe
                 <button 
                   onClick={() => {
                     if (isProd) {
-                      onSelectMenu?.(activeMenu === 'orders' ? 'tasks' : 'orders');
+                      onSelectMenu?.(activeMenu === 'orders' ? 'outsourcing' : 'orders');
                     }
                   }}
                   className={cn(
@@ -205,15 +207,23 @@ export default function MainLayout({ children, activeMenu = 'orders', onSelectMe
               const SubIcon = sub.icon;
               const isSubActive = activeHoverItem.key === 'prod' && (
                 (sub.key === 'orders' && activeMenu === 'orders') || 
-                (sub.key === 'tasks' && activeMenu === 'tasks')
+                (sub.key === 'tasks' && activeMenu === 'tasks') ||
+                (sub.key === 'outsourcing' && activeMenu === 'outsourcing') ||
+                (sub.key === 'outsourcing-apply' && activeMenu === 'outsourcing-apply')
               );
 
               return (
                 <button
                   key={sub.key}
                   onClick={() => {
-                    if (sub.key === 'orders' || sub.key === 'tasks') {
-                      onSelectMenu?.(sub.key as 'orders' | 'tasks');
+                    if (
+                      sub.key === 'orders' ||
+                      sub.key === 'tasks' ||
+                      sub.key === 'outsourcing' ||
+                      sub.key === 'outsourcing-apply'
+                    ) {
+                      onSelectMenu?.(sub.key as 'orders' | 'tasks' | 'outsourcing' | 'outsourcing-apply');
+                      setHoveredKey(null);
                     }
                   }}
                   className={cn(
@@ -257,16 +267,26 @@ export default function MainLayout({ children, activeMenu = 'orders', onSelectMe
                           <Layers className="w-4 h-4 stroke-[1.5]" />
                           工单管理
                         </span>
-                      ) : (
+                      ) : activeMenu === 'tasks' ? (
                         <span className="flex items-center gap-1.5 text-blue-600">
                           <ClipboardList className="w-4 h-4 stroke-[1.5]" />
                           生产任务
+                        </span>
+                      ) : activeMenu === 'outsourcing-apply' ? (
+                        <span className="flex items-center gap-1.5 text-blue-600">
+                          <BookOpen className="w-4 h-4 stroke-[1.5]" />
+                          外协申请单
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1.5 text-slate-500 font-normal">
+                          <Cpu className="w-4 h-4 stroke-[1.5] text-slate-400" />
+                          外协工单
                         </span>
                       )}
                       <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
                     </button>
 
-                    <div className="absolute left-0 top-full hidden group-hover:flex flex-col bg-white border border-slate-200 rounded-md shadow-lg py-1 min-w-[120px] z-50">
+                    <div className="absolute left-0 top-full hidden group-hover:flex flex-col bg-white border border-slate-200 rounded-md shadow-lg py-1 min-w-[140px] z-50">
                       <button
                         onClick={() => onSelectMenu?.('orders')}
                         className={cn(
@@ -286,6 +306,26 @@ export default function MainLayout({ children, activeMenu = 'orders', onSelectMe
                       >
                         <ClipboardList className="w-3.5 h-3.5" />
                         <span>生产任务</span>
+                      </button>
+                      <button
+                        onClick={() => onSelectMenu?.('outsourcing')}
+                        className={cn(
+                          "px-3 py-1.5 text-xs text-left hover:bg-slate-50 flex items-center gap-2 cursor-pointer",
+                          activeMenu === 'outsourcing' && "font-bold text-blue-600 bg-blue-50/50"
+                        )}
+                      >
+                        <Cpu className="w-3.5 h-3.5" />
+                        <span>外协工单</span>
+                      </button>
+                      <button
+                        onClick={() => onSelectMenu?.('outsourcing-apply')}
+                        className={cn(
+                          "px-3 py-1.5 text-xs text-left hover:bg-slate-50 flex items-center gap-2 cursor-pointer",
+                          activeMenu === 'outsourcing-apply' && "font-bold text-blue-600 bg-blue-50/50"
+                        )}
+                      >
+                        <BookOpen className="w-3.5 h-3.5" />
+                        <span>外协申请单</span>
                       </button>
                     </div>
                  </div>
@@ -314,7 +354,7 @@ export default function MainLayout({ children, activeMenu = 'orders', onSelectMe
                   </button>
                  
                  <div className="w-7 h-7 rounded-full bg-indigo-600 ml-2 shadow-inner flex items-center justify-center text-white text-xs overflow-hidden shrink-0">
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=4f46e5" alt="Avatar" className="w-full h-full object-cover" />
+                    <User className="w-4 h-4 text-white" />
                  </div>
               </div>
            </div>

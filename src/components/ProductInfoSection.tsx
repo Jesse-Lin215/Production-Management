@@ -53,7 +53,7 @@ export default function ProductInfoSection({
       {/* Header Bar - Row 1: Title & Expand Toggle */}
       <div 
         id="product-info-header"
-        className="px-5 py-3 bg-gradient-to-r from-slate-50 via-slate-50/90 to-blue-50/20 border-b border-slate-200 flex items-center justify-between cursor-pointer hover:bg-slate-100/70 transition-colors select-none"
+        className="px-5 py-3 bg-white border-b border-slate-200 flex items-center justify-between cursor-pointer hover:bg-slate-50/50 transition-colors select-none"
         onClick={onToggleExpand}
       >
         <div className="flex items-center gap-2.5 shrink-0">
@@ -126,9 +126,9 @@ export default function ProductInfoSection({
 
       {/* Expanded Content Area */}
       {isExpanded && (
-        <div id="product-info-body" className="p-5 flex flex-col gap-4 bg-slate-50/30">
+        <div id="product-info-body" className="p-5 flex flex-col gap-4 bg-white">
           {products.length === 0 ? (
-            <div className="p-8 text-center bg-amber-50/50 border border-dashed border-amber-200 rounded-xl flex flex-col items-center justify-center gap-2">
+            <div className="p-8 text-center bg-white border border-dashed border-amber-200 rounded-xl flex flex-col items-center justify-center gap-2 shadow-2xs">
               <AlertCircle className="w-8 h-8 text-amber-500" />
               <span className="text-sm font-bold text-amber-900">未找到共有产品数据</span>
               <p className="text-xs text-amber-700 max-w-md">
@@ -142,7 +142,7 @@ export default function ProductInfoSection({
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse min-w-[760px] table-fixed">
                     <thead>
-                      <tr className="bg-slate-100/80 text-slate-600 font-bold border-b border-slate-200">
+                      <tr className="bg-white text-slate-600 font-bold border-b border-slate-200">
                         <th className="py-2.5 px-2 w-[4%] text-center whitespace-nowrap">选择</th>
                         <th className="py-2.5 px-2 w-[4%] text-center whitespace-nowrap">序号</th>
                         <th className="py-2.5 px-3 w-[13%] text-center whitespace-nowrap">产品编码</th>
@@ -150,7 +150,7 @@ export default function ProductInfoSection({
                         <th className="py-2.5 px-3 w-[15%] text-center whitespace-nowrap">工艺路线</th>
                         <th className="py-2.5 px-3 w-[9%] text-center whitespace-nowrap">BOM版本</th>
                         <th className="py-2.5 px-3 w-[9%] text-center whitespace-nowrap">产品分类</th>
-                        <th className="py-2.5 px-3 w-[10%] text-center whitespace-nowrap bg-slate-50/80">
+                        <th className="py-2.5 px-3 w-[10%] text-center whitespace-nowrap">
                           订单数量
                         </th>
                         <th className="py-2.5 px-3 w-[13%] text-center whitespace-nowrap">状态</th>
@@ -230,7 +230,7 @@ export default function ProductInfoSection({
                             </td>
 
                             {/* Order Quantity */}
-                            <td className="py-2.5 px-3 text-center bg-slate-50/40">
+                            <td className="py-2.5 px-3 text-center">
                               <span className="font-mono font-bold text-slate-700">
                                 {item.orderQuantity || 0}
                               </span>
@@ -260,16 +260,16 @@ export default function ProductInfoSection({
 
               {/* Per Sales Order Breakdown Quantity Adjustment Card */}
               {selectedProduct && selectedProduct.orderBreakdown && selectedProduct.orderBreakdown.length > 0 && (
-                <div className="border border-purple-200/90 rounded-xl overflow-hidden bg-white shadow-xs">
-                  <div className="px-4 py-3 bg-gradient-to-r from-purple-50/80 via-slate-50 to-blue-50/40 border-b border-purple-100 flex flex-wrap items-center justify-between gap-2">
+                <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-xs">
+                  <div className="px-4 py-3 bg-white border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-xs shadow-2xs">
+                      <div className="w-6 h-6 rounded bg-purple-50 text-purple-700 border border-purple-200 flex items-center justify-center font-bold text-xs shadow-2xs">
                         <Layers className="w-3.5 h-3.5" />
                       </div>
                       <span className="text-xs font-bold text-slate-800">
                         生产明细调整
                       </span>
-                      <span className="text-[11px] text-purple-700 bg-purple-100/80 border border-purple-200 px-2 py-0.5 rounded font-mono font-bold">
+                      <span className="text-[11px] text-purple-700 bg-white border border-purple-200 px-2 py-0.5 rounded font-mono font-bold">
                         {selectedProduct.productName} ({selectedProduct.productCode})
                       </span>
                     </div>
@@ -281,12 +281,11 @@ export default function ProductInfoSection({
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs border-collapse min-w-[760px] table-fixed">
                       <thead>
-                        <tr className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
-                          <th className="py-2.5 px-3 text-center w-[25%]">销售订单项次</th>
-                          <th className="py-2.5 px-4 text-left w-[33%]">客户名称</th>
-                          <th className="py-2.5 px-3 text-center w-[15%]">计划交货日期</th>
-                          <th className="py-2.5 px-3 text-center w-[12%] bg-slate-100/60">订单数量</th>
-                          <th className="py-2.5 px-4 text-center w-[15%] bg-purple-50/60 text-purple-900 border-l border-r border-purple-100">
+                        <tr className="bg-white text-slate-600 font-bold border-b border-slate-200">
+                          <th className="py-2.5 px-3 text-center w-[30%]">销售订单项次</th>
+                          <th className="py-2.5 px-3 text-center w-[25%]">计划交货日期</th>
+                          <th className="py-2.5 px-3 text-center w-[20%]">订单数量</th>
+                          <th className="py-2.5 px-4 text-center w-[25%] text-purple-900 border-l border-r border-slate-200">
                             <span>生产数量</span>
                           </th>
                         </tr>
@@ -294,20 +293,17 @@ export default function ProductInfoSection({
                       <tbody className="divide-y divide-slate-100">
                         {selectedProduct.orderBreakdown.map((bd) => {
                           return (
-                            <tr key={bd.orderNo} className="hover:bg-purple-50/20 transition-colors">
+                            <tr key={bd.orderNo} className="hover:bg-slate-50/40 transition-colors">
                               <td className="py-2.5 px-3 text-center font-mono font-bold text-blue-600 truncate">
                                 {bd.orderNo}-{bd.lineNo || 1}
-                              </td>
-                              <td className="py-2.5 px-4 text-left text-slate-700 font-medium truncate" title={bd.customer}>
-                                {bd.customer}
                               </td>
                               <td className="py-2.5 px-3 text-center text-slate-500 font-mono">
                                 {bd.planDeliveryDate || '-'}
                               </td>
-                              <td className="py-2.5 px-3 text-center font-mono font-medium text-slate-600 bg-slate-50/30">
+                              <td className="py-2.5 px-3 text-center font-mono font-medium text-slate-600">
                                 {bd.orderQuantity} {selectedProduct.unit}
                               </td>
-                              <td className="py-2 px-4 text-center bg-purple-50/30 border-l border-r border-purple-100">
+                              <td className="py-2 px-4 text-center border-l border-r border-slate-200">
                                 <div className="flex items-center justify-center gap-1">
                                   <div className="flex items-center h-7 border border-purple-300 rounded-md bg-white overflow-hidden shadow-2xs focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-400 w-28">
                                     <button 

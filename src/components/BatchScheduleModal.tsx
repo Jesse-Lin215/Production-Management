@@ -22,6 +22,16 @@ import {
   batchUpdateProductionTaskStatus
 } from '../mockStore';
 import { SchedulePlanItem, ReportingType, ProductionTask, TaskPriority, ProductionTaskStatus } from '../types';
+import {
+  ScheduleMultiSelect,
+  ReportingTypeSelect,
+  ALL_SCHEDULE_POSITIONS,
+  ALL_SCHEDULE_EMPLOYEES,
+  applyPositionSelectionChange,
+  applyEmployeeSelectionChange,
+  parseMultiValue,
+  getTodayDateStr,
+} from './ScheduleMultiSelect';
 
 export interface BatchScheduleModalProps {
   isOpen: boolean;
@@ -42,7 +52,6 @@ export interface OrderFieldOption {
 export const availableOrderFields: OrderFieldOption[] = [
   { key: 'so', label: '销售订单', category: '业务信息', defaultVisible: true, description: '关联的销售订单编号' },
   { key: 'lineItem', label: '项次', category: '业务信息', defaultVisible: true, description: '销售订单行项次序号' },
-  { key: 'customer', label: '客户名称', category: '业务信息', defaultVisible: true, description: '订单终端客户或需求方' },
   { key: 'productCode', label: '产品编码', category: '产品属性', defaultVisible: true, description: '物料/产品唯一编码' },
   { key: 'product', label: '产品名称', category: '产品属性', defaultVisible: true, description: '产品名称及基础规格' },
   { key: 'spec', label: '规格型号', category: '产品属性', defaultVisible: true, description: '详细尺寸规格与材质' },
@@ -174,8 +183,8 @@ export default function BatchScheduleModal({
     return { validOrders: valid, fullyScheduledOrders: fully, partialOrders: partial };
   }, [selectedOrders]);
 
-  // Base date for scheduling
-  const todayStr = '2026-08-25';
+  // Base date for scheduling (defaults to today)
+  const todayStr = getTodayDateStr();
 
   const standardEquipments = [
     { code: 'EQ-01', name: '设备1# (高精数控)' },
@@ -369,7 +378,6 @@ export default function BatchScheduleModal({
     switch (key) {
       case 'so': return order.so || '-';
       case 'lineItem': return order.lineItem || '01';
-      case 'customer': return order.customer || '-';
       case 'productCode': return order.productCode || '-';
       case 'product': return order.product || '-';
       case 'spec': return order.spec || '标准规格';
@@ -477,9 +485,8 @@ export default function BatchScheduleModal({
         const term = orderViewSearchTerm.toLowerCase();
         const matchNo = item.order.no.toLowerCase().includes(term);
         const matchProd = item.order.product.toLowerCase().includes(term) || item.order.productCode.toLowerCase().includes(term);
-        const matchCust = (item.order.customer || '').toLowerCase().includes(term);
         const matchSo = (item.order.so || '').toLowerCase().includes(term);
-        if (!matchNo && !matchProd && !matchCust && !matchSo) return false;
+        if (!matchNo && !matchProd && !matchSo) return false;
       }
       // Priority filter
       if (orderViewPriorityFilter !== 'ALL' && item.order.priority !== orderViewPriorityFilter) {
@@ -1172,7 +1179,7 @@ export default function BatchScheduleModal({
                       <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input
                         type="text"
-                        placeholder="搜索工单/产品/客户/SO..."
+                        placeholder="搜索工单/产品/SO..."
                         value={orderViewSearchTerm}
                         onChange={(e) => setOrderViewSearchTerm(e.target.value)}
                         className="pl-8 pr-3 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-500 focus:bg-white w-44 transition-all"
@@ -1474,11 +1481,12 @@ export default function BatchScheduleModal({
                                 {/* Editable Scheduling Parameters */}
                                 <th className="py-2 px-2.5 min-w-[110px]">工作站</th>
                                 <th className="py-2 px-2.5 min-w-[105px]">设备</th>
-                                <th className="py-2 px-2.5 min-w-[85px]">岗位</th>
-                                <th className="py-2 px-2.5 min-w-[85px]">指派员工</th>
+                                <th className="py-2 px-2.5 min-w-[175px]">岗位</th>
+                                <th className="py-2 px-2.5 min-w-[160px]">员工</th>
+                                <th className="py-2 px-2.5 min-w-[115px] text-center">报工方式</th>
                                 <th className="py-2 px-2.5 min-w-[80px] text-center bg-emerald-50/60 text-emerald-900">排产数量</th>
-                                <th className="py-2 px-2.5 min-w-[130px] text-center bg-indigo-50/60 text-indigo-900">计划开工时间</th>
-                                <th className="py-2 px-2.5 min-w-[130px] text-center bg-indigo-50/60 text-indigo-900">预计完工时间</th>
+                                <th className="py-2 px-2.5 min-w-[130px] text-center bg-indigo-50/60 text-indigo-900">计划开始时间</th>
+                                <th className="py-2 px-2.5 min-w-[130px] text-center bg-indigo-50/60 text-indigo-900">预计完成时间</th>
                                 <th className="py-2 px-2.5 min-w-[100px]">备注</th>
                                 <th className="py-2 px-2.5 w-20 text-center sticky right-0 bg-slate-50 z-10 border-l border-slate-200">操作</th>
                               </tr>
@@ -1571,42 +1579,53 @@ export default function BatchScheduleModal({
                                     </select>
                                   </td>
 
-                                  {/* Position */}
+                                  {/* Position (Multi-select with auto-bring employees) */}
                                   <td className="py-2 px-2.5">
-                                    <select
+                                    <ScheduleMultiSelect
                                       value={child.position}
-                                      onChange={(e) => {
-                                        const pos = e.target.value;
+                                      options={ALL_SCHEDULE_POSITIONS}
+                                      placeholder="请选择岗位"
+                                      widthClass="w-[175px]"
+                                      onChange={(nextPos, prevPos) => {
+                                        const currentEmps = parseMultiValue(child.employee);
+                                        const res = applyPositionSelectionChange(nextPos, prevPos, currentEmps);
                                         setProcesses(prev => prev.map((p, i) => i === pIdx ? {
                                           ...p,
-                                          orders: p.orders.map((o, idx) => idx === cIdx ? { ...o, position: pos } : o)
+                                          orders: p.orders.map((o, idx) => idx === cIdx ? { ...o, ...res } : o)
                                         } : p));
                                       }}
-                                      className="w-full px-1.5 py-1 border border-slate-200 rounded text-xs bg-white outline-none focus:border-blue-500 hover:border-slate-300"
-                                    >
-                                      {standardPositions.map(pos => (
-                                        <option key={pos} value={pos}>{pos}</option>
-                                      ))}
-                                    </select>
+                                    />
                                   </td>
 
-                                  {/* Employee */}
+                                  {/* Employee (Multi-select with auto-bring position) */}
                                   <td className="py-2 px-2.5">
-                                    <select
+                                    <ScheduleMultiSelect
                                       value={child.employee}
-                                      onChange={(e) => {
-                                        const emp = e.target.value;
+                                      options={ALL_SCHEDULE_EMPLOYEES.map(e => e.name)}
+                                      placeholder="请选择员工"
+                                      widthClass="w-[160px]"
+                                      onChange={(nextEmps, prevEmps) => {
+                                        const currentPos = parseMultiValue(child.position);
+                                        const res = applyEmployeeSelectionChange(nextEmps, prevEmps, currentPos);
                                         setProcesses(prev => prev.map((p, i) => i === pIdx ? {
                                           ...p,
-                                          orders: p.orders.map((o, idx) => idx === cIdx ? { ...o, employee: emp } : o)
+                                          orders: p.orders.map((o, idx) => idx === cIdx ? { ...o, ...res } : o)
                                         } : p));
                                       }}
-                                      className="w-full px-1.5 py-1 border border-slate-200 rounded text-xs bg-white outline-none focus:border-blue-500 hover:border-slate-300"
-                                    >
-                                      {standardEmployees.map(emp => (
-                                        <option key={emp.name} value={emp.name}>{emp.name}</option>
-                                      ))}
-                                    </select>
+                                    />
+                                  </td>
+
+                                  {/* Reporting Type (left of Schedule Quantity) */}
+                                  <td className="py-2 px-2.5 text-center">
+                                    <ReportingTypeSelect
+                                      value={child.reportingType}
+                                      onChange={(val) => {
+                                        setProcesses(prev => prev.map((p, i) => i === pIdx ? {
+                                          ...p,
+                                          orders: p.orders.map((o, idx) => idx === cIdx ? { ...o, reportingType: val } : o)
+                                        } : p));
+                                      }}
+                                    />
                                   </td>
 
                                   {/* Schedule Quantity */}
@@ -1953,12 +1972,12 @@ export default function BatchScheduleModal({
                                   {/* Scheduling Controls */}
                                   <th className="py-2 px-2.5 min-w-[110px]">工作站</th>
                                   <th className="py-2 px-2.5 min-w-[105px]">设备</th>
-                                  <th className="py-2 px-2.5 min-w-[85px]">岗位</th>
-                                  <th className="py-2 px-2.5 min-w-[85px]">指派员工</th>
+                                  <th className="py-2 px-2.5 min-w-[175px]">岗位</th>
+                                  <th className="py-2 px-2.5 min-w-[160px]">员工</th>
+                                  <th className="py-2 px-2.5 min-w-[115px] text-center">报工方式</th>
                                   <th className="py-2 px-2.5 min-w-[80px] text-center bg-emerald-50/60 text-emerald-900">排产数量</th>
-                                  <th className="py-2 px-2.5 min-w-[130px] text-center bg-indigo-50/60 text-indigo-900">计划开工时间</th>
-                                  <th className="py-2 px-2.5 min-w-[130px] text-center bg-indigo-50/60 text-indigo-900">预计完工时间</th>
-                                  <th className="py-2 px-2.5 min-w-[90px]">报工类型</th>
+                                  <th className="py-2 px-2.5 min-w-[130px] text-center bg-indigo-50/60 text-indigo-900">计划开始时间</th>
+                                  <th className="py-2 px-2.5 min-w-[130px] text-center bg-indigo-50/60 text-indigo-900">预计完成时间</th>
                                   <th className="py-2 px-2.5 min-w-[100px]">备注</th>
                                   <th className="py-2 px-2.5 w-20 text-center sticky right-0 bg-slate-50 z-10 border-l border-slate-200">操作</th>
                                 </tr>
@@ -2052,36 +2071,44 @@ export default function BatchScheduleModal({
                                         </select>
                                       </td>
 
-                                      {/* Position */}
+                                      {/* Position (Multi-select with auto-bring employees) */}
                                       <td className="py-2 px-2.5">
-                                        <select
+                                        <ScheduleMultiSelect
                                           value={child.position}
-                                          onChange={(e) => {
-                                            const pos = e.target.value;
-                                            updateOrderProcessParam(op.processName, order.no, child.splitId, { position: pos });
+                                          options={ALL_SCHEDULE_POSITIONS}
+                                          placeholder="请选择岗位"
+                                          widthClass="w-[175px]"
+                                          onChange={(nextPos, prevPos) => {
+                                            const currentEmps = parseMultiValue(child.employee);
+                                            const res = applyPositionSelectionChange(nextPos, prevPos, currentEmps);
+                                            updateOrderProcessParam(op.processName, order.no, child.splitId, res);
                                           }}
-                                          className="w-full px-1.5 py-1 border border-slate-200 rounded text-xs bg-white outline-none focus:border-blue-500 hover:border-slate-300"
-                                        >
-                                          {standardPositions.map(pos => (
-                                            <option key={pos} value={pos}>{pos}</option>
-                                          ))}
-                                        </select>
+                                        />
                                       </td>
 
-                                      {/* Employee */}
+                                      {/* Employee (Multi-select with auto-bring position) */}
                                       <td className="py-2 px-2.5">
-                                        <select
+                                        <ScheduleMultiSelect
                                           value={child.employee}
-                                          onChange={(e) => {
-                                            const emp = e.target.value;
-                                            updateOrderProcessParam(op.processName, order.no, child.splitId, { employee: emp });
+                                          options={ALL_SCHEDULE_EMPLOYEES.map(e => e.name)}
+                                          placeholder="请选择员工"
+                                          widthClass="w-[160px]"
+                                          onChange={(nextEmps, prevEmps) => {
+                                            const currentPos = parseMultiValue(child.position);
+                                            const res = applyEmployeeSelectionChange(nextEmps, prevEmps, currentPos);
+                                            updateOrderProcessParam(op.processName, order.no, child.splitId, res);
                                           }}
-                                          className="w-full px-1.5 py-1 border border-slate-200 rounded text-xs bg-white outline-none focus:border-blue-500 hover:border-slate-300"
-                                        >
-                                          {standardEmployees.map(emp => (
-                                            <option key={emp.name} value={emp.name}>{emp.name}</option>
-                                          ))}
-                                        </select>
+                                        />
+                                      </td>
+
+                                      {/* Reporting Type (Placed left of Quantity) */}
+                                      <td className="py-2 px-2.5 text-center">
+                                        <ReportingTypeSelect
+                                          value={child.reportingType}
+                                          onChange={(val) => {
+                                            updateOrderProcessParam(op.processName, order.no, child.splitId, { reportingType: val });
+                                          }}
+                                        />
                                       </td>
 
                                       {/* Quantity */}
@@ -2122,21 +2149,6 @@ export default function BatchScheduleModal({
                                           }}
                                           className="w-full px-1.5 py-1 border border-slate-200 rounded text-xs bg-white focus:border-blue-500 outline-none hover:border-slate-300"
                                         />
-                                      </td>
-
-                                      {/* Reporting Type */}
-                                      <td className="py-2 px-2.5">
-                                        <select
-                                          value={child.reportingType}
-                                          onChange={(e) => {
-                                            const val = e.target.value as ReportingType;
-                                            updateOrderProcessParam(op.processName, order.no, child.splitId, { reportingType: val });
-                                          }}
-                                          className="w-full px-1.5 py-1 border border-slate-200 rounded text-xs bg-white focus:border-blue-500 outline-none hover:border-slate-300"
-                                        >
-                                          <option value="PIECE">计件</option>
-                                          <option value="TIME">工时</option>
-                                        </select>
                                       </td>
 
                                       {/* Remark */}
@@ -2368,11 +2380,6 @@ export default function BatchScheduleModal({
                             项: {order.lineItem || '01'}
                           </span>
                         )}
-                        {visibleFieldKeys.has('customer') && order.customer && (
-                          <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded truncate max-w-[100px]" title={order.customer}>
-                            {order.customer}
-                          </span>
-                        )}
                         {visibleFieldKeys.has('qty') && (
                           <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-100 px-1.5 py-0.2 rounded font-mono">
                             {order.qty} 台
@@ -2551,7 +2558,6 @@ export default function BatchScheduleModal({
                             {/* Dynamically configured fields in task table */}
                             {visibleFieldKeys.has('so') && <th className="py-2.5 px-3 min-w-[120px]">销售订单</th>}
                             {visibleFieldKeys.has('lineItem') && <th className="py-2.5 px-3 min-w-[60px]">项次</th>}
-                            {visibleFieldKeys.has('customer') && <th className="py-2.5 px-3 min-w-[110px]">客户名称</th>}
 
                             <th className="py-2.5 px-3 min-w-[90px]">工序名称</th>
                             <th className="py-2.5 px-3 min-w-[140px]">工作站 / 设备</th>
@@ -2614,11 +2620,6 @@ export default function BatchScheduleModal({
                                 {visibleFieldKeys.has('lineItem') && (
                                   <td className="py-2.5 px-3 font-mono text-xs text-slate-700">
                                     {task.orderLineItem || '01'}
-                                  </td>
-                                )}
-                                {visibleFieldKeys.has('customer') && (
-                                  <td className="py-2.5 px-3 text-xs text-slate-700 truncate max-w-[110px]" title={task.orderCustomer}>
-                                    {task.orderCustomer || '-'}
                                   </td>
                                 )}
 

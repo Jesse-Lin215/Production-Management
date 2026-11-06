@@ -9,6 +9,17 @@ import {
   Layers, List, Sliders, ChevronDown, ChevronUp, Users, Sparkles, CalendarDays, MoreVertical, Info, X, HelpCircle, Filter
 } from 'lucide-react';
 import BomTree from './BomTree';
+import {
+  ScheduleMultiSelect,
+  ReportingTypeSelect,
+  ALL_SCHEDULE_POSITIONS,
+  ALL_SCHEDULE_EMPLOYEES,
+  applyPositionSelectionChange,
+  applyEmployeeSelectionChange,
+  parseMultiValue,
+  getTodayDateStr,
+  getTodayDateTimeStr,
+} from './ScheduleMultiSelect';
 
 interface SchedulingPanelProps {
   readOnly?: boolean;
@@ -234,7 +245,24 @@ function SchedulingPanel({
         } else {
           const key = `${node.id}-${op.id}`;
           const existing = schedulePlanMap[key];
-          const plan: SchedulePlanItem = existing || {
+          const todayStr = getTodayDateStr();
+          const defaultPos = op.stepIdx === 1 ? '激光下料操作工,折弯' : op.stepIdx === 2 ? '折弯' : '焊工';
+          const defaultEmp =
+            op.stepIdx === 1
+              ? '唐鸿运,王文源,谢建文,黄友建,黄雄建,谭志亮'
+              : op.stepIdx === 2
+              ? '吴达,倪抗林'
+              : '陈建国,刘志强';
+          const normalizedExisting = existing
+            ? {
+                ...existing,
+                plannedStartTime:
+                  !existing.plannedStartTime || existing.plannedStartTime.startsWith('2026-06-10')
+                    ? `${todayStr}T08:00`
+                    : existing.plannedStartTime,
+              }
+            : null;
+          const plan: SchedulePlanItem = normalizedExisting || {
             id: key,
             nodeId: node.id,
             opId: op.id,
@@ -243,12 +271,13 @@ function SchedulingPanel({
             opName: op.opName,
             stepIdx: op.stepIdx,
             scheduledQuantity: (node as any).quantity || comp?.totalDemand || 1,
+            reportingType: op.reportingType || 'PIECE',
             workCenterCode: op.workCenterCode || `WS-0${(op.stepIdx % 3) + 1}`,
             workCenterName: op.workCenter || `工作站0${(op.stepIdx % 3) + 1}`,
-            position: '操作工',
-            employee: op.stepIdx % 2 === 0 ? '张师傅' : '李师傅',
-            plannedStartTime: '2026-06-10T08:00',
-            estimatedEndTime: '2026-06-10T18:00',
+            position: defaultPos,
+            employee: defaultEmp,
+            plannedStartTime: `${todayStr}T08:00`,
+            estimatedEndTime: `${todayStr}T18:00`,
             remark: op.remark || '',
             isScheduled: false,
           };
@@ -330,13 +359,14 @@ function SchedulingPanel({
       const totalTargetCount = targetNodes.length;
 
       // First plan as default representative sample
+      const todayStr = getTodayDateStr();
       const samplePlan = value.items[0]?.plan || {
         workCenterCode: '',
         workCenterName: '',
-        position: '操作工',
-        employee: '',
-        plannedStartTime: '2026-06-10T08:00',
-        estimatedEndTime: '2026-06-10T18:00',
+        position: '激光下料操作工',
+        employee: '唐鸿运,王文源',
+        plannedStartTime: `${todayStr}T08:00`,
+        estimatedEndTime: `${todayStr}T18:00`,
         remark: ''
       } as SchedulePlanItem;
 
@@ -569,6 +599,7 @@ function SchedulingPanel({
           const op = node?.operations?.find(o => o.id === opId);
           const comp = node ? initialBomCompositionList.find(c => c.materialCode === node.code) : null;
 
+          const todayStr = getTodayDateStr();
           const existing = next[key] || {
             id: key,
             nodeId: nodeId,
@@ -578,12 +609,13 @@ function SchedulingPanel({
             opName: op?.opName || '',
             stepIdx: op?.stepIdx || 1,
             scheduledQuantity: (node as any)?.quantity || comp?.totalDemand || 1,
+            reportingType: op?.reportingType || 'PIECE',
             workCenterCode: op?.workCenterCode || 'WS-01',
             workCenterName: op?.workCenter || '工作站01',
-            position: '操作工',
-            employee: '张师傅',
-            plannedStartTime: '2026-06-10T08:00',
-            estimatedEndTime: '2026-06-10T18:00',
+            position: '激光下料操作工',
+            employee: '唐鸿运,王文源',
+            plannedStartTime: `${todayStr}T08:00`,
+            estimatedEndTime: `${todayStr}T18:00`,
             remark: op?.remark || '',
             isScheduled: false,
           };
@@ -646,6 +678,7 @@ function SchedulingPanel({
     });
     setSelectedSplitRowIds(new Set());
 
+    const todayStr = getTodayDateStr();
     if (totalDemand >= 3) {
       const q1 = Math.floor(totalDemand * 0.4) || 1;
       const q2 = totalDemand - q1;
@@ -655,11 +688,11 @@ function SchedulingPanel({
           workCenterCode: op.workCenterCode || 'WS-01',
           workCenterName: `${op.workCenter || "工作站"}A线`,
           equipmentName: "设备1#",
-          position: '操作工',
-          employee: '张师傅',
+          position: '激光下料操作工',
+          employee: '唐鸿运,王文源',
           quantity: q1,
-          plannedStartTime: '2026-06-10T08:00',
-          estimatedEndTime: '2026-06-10T18:00',
+          plannedStartTime: `${todayStr}T08:00`,
+          estimatedEndTime: `${todayStr}T18:00`,
           remark: 'A线分排'
         },
         {
@@ -667,11 +700,11 @@ function SchedulingPanel({
           workCenterCode: op.workCenterCode || 'WS-02',
           workCenterName: `${op.workCenter || "工作站"}B线`,
           equipmentName: "设备2#",
-          position: '操作工',
-          employee: '李师傅',
+          position: '折弯',
+          employee: '吴达,倪抗林',
           quantity: q2,
-          plannedStartTime: '2026-06-10T08:00',
-          estimatedEndTime: '2026-06-10T18:00',
+          plannedStartTime: `${todayStr}T08:00`,
+          estimatedEndTime: `${todayStr}T18:00`,
           remark: 'B线分排'
         }
       ]);
@@ -682,11 +715,11 @@ function SchedulingPanel({
           workCenterCode: op.workCenterCode || 'WS-01',
           workCenterName: `${op.workCenter || "工作站"}A线`,
           equipmentName: "设备1#",
-          position: '操作工',
-          employee: '张师傅',
+          position: '激光下料操作工',
+          employee: '唐鸿运,王文源',
           quantity: 1,
-          plannedStartTime: '2026-06-10T08:00',
-          estimatedEndTime: '2026-06-10T18:00',
+          plannedStartTime: `${todayStr}T08:00`,
+          estimatedEndTime: `${todayStr}T18:00`,
           remark: '第一批'
         },
         {
@@ -694,11 +727,11 @@ function SchedulingPanel({
           workCenterCode: op.workCenterCode || 'WS-02',
           workCenterName: `${op.workCenter || "工作站"}B线`,
           equipmentName: "设备2#",
-          position: '操作工',
-          employee: '李师傅',
+          position: '折弯',
+          employee: '吴达,倪抗林',
           quantity: totalDemand - 1 > 0 ? totalDemand - 1 : 1,
-          plannedStartTime: '2026-06-10T08:00',
-          estimatedEndTime: '2026-06-10T18:00',
+          plannedStartTime: `${todayStr}T08:00`,
+          estimatedEndTime: `${todayStr}T18:00`,
           remark: '第二批'
         }
       ]);
@@ -850,7 +883,7 @@ function SchedulingPanel({
   return (
     <div className="flex w-full h-full min-h-0 bg-white relative">
       {/* Left Split: BOM Tree & Material Selection */}
-      <div className={cn("shrink-0 border-r border-slate-200 bg-slate-50/50 flex flex-col pt-4 overflow-hidden transition-all duration-300", isSidebarOpen ? "w-[320px]" : "w-0 border-r-0")}>
+      <div className={cn("shrink-0 border-r border-slate-200 bg-white flex flex-col pt-4 overflow-hidden transition-all duration-300", isSidebarOpen ? "w-[320px]" : "w-0 border-r-0")}>
         <div className="w-[320px] flex flex-col h-full">
           <div className="px-3 pb-3 mb-2 border-b border-slate-200/60 shrink-0 flex flex-col gap-2.5">
             <div className="flex items-center justify-between gap-1">
@@ -979,7 +1012,7 @@ function SchedulingPanel({
 
         {/* Status Sub-Banner & Actions */}
         {!readOnly && (
-          <div className="px-6 py-2.5 bg-slate-50/90 border-b border-slate-200/80 flex items-center justify-between text-xs text-slate-600 shrink-0">
+          <div className="px-6 py-2.5 bg-white border-b border-slate-200 flex items-center justify-between text-xs text-slate-600 shrink-0">
              <div className="flex items-center gap-3">
                 <span>已选排产物料: </span>
                 {checkedNodeIds.size > 0 ? (
@@ -1021,7 +1054,7 @@ function SchedulingPanel({
         )}
 
         {/* Table Area */}
-        <div className="flex-1 overflow-auto bg-slate-50/40 relative p-6">
+        <div className="flex-1 overflow-auto bg-white relative p-6">
           {viewMode === 'AGGREGATED' ? (
             /* ========================================================================= */
             /* Aggregated Batch Scheduling View (按工序聚合批量排产视角)                  */
@@ -1046,7 +1079,7 @@ function SchedulingPanel({
                       )}
                     >
                       {/* Operation Group Bar */}
-                      <div className="p-4 bg-slate-50/80 border-b border-slate-200/80 flex flex-wrap items-center justify-between gap-4">
+                      <div className="p-4 bg-white border-b border-slate-200 flex flex-wrap items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                            <button 
                              onClick={() => toggleExpandOp(grp.opName)}
@@ -1185,22 +1218,30 @@ function SchedulingPanel({
                               </div>
                               <div>
                                 <label className="block text-[10px] text-slate-500 mb-0.5">岗位</label>
-                                <input 
-                                  type="text" 
-                                  value={samplePlan?.position || '操作工'} 
-                                  onChange={(e) => updateBatchOperation(grp.opName, { position: e.target.value })}
-                                  placeholder="操作工"
-                                  className="w-full px-2 py-1 border border-slate-300 rounded bg-white focus:border-blue-500 outline-none transition text-xs"
+                                <ScheduleMultiSelect
+                                  value={samplePlan?.position || ''}
+                                  options={ALL_SCHEDULE_POSITIONS}
+                                  placeholder="选择岗位"
+                                  widthClass="w-full"
+                                  onChange={(nextPos, prevPos) => {
+                                    const currentEmps = parseMultiValue(samplePlan?.employee);
+                                    const res = applyPositionSelectionChange(nextPos, prevPos, currentEmps);
+                                    updateBatchOperation(grp.opName, res);
+                                  }}
                                 />
                               </div>
                               <div>
                                 <label className="block text-[10px] text-blue-700 font-bold mb-0.5">指派员工</label>
-                                <input 
-                                  type="text" 
-                                  value={samplePlan?.employee || ''} 
-                                  onChange={(e) => updateBatchOperation(grp.opName, { employee: e.target.value })}
-                                  placeholder="指派人员"
-                                  className="w-full px-2 py-1 border border-blue-300 bg-blue-50/50 text-blue-700 font-bold rounded focus:bg-white focus:border-blue-500 outline-none transition text-xs"
+                                <ScheduleMultiSelect
+                                  value={samplePlan?.employee || ''}
+                                  options={ALL_SCHEDULE_EMPLOYEES.map(e => e.name)}
+                                  placeholder="选择员工"
+                                  widthClass="w-full"
+                                  onChange={(nextEmps, prevEmps) => {
+                                    const currentPos = parseMultiValue(samplePlan?.position);
+                                    const res = applyEmployeeSelectionChange(nextEmps, prevEmps, currentPos);
+                                    updateBatchOperation(grp.opName, res);
+                                  }}
                                 />
                               </div>
                             </div>
@@ -1271,9 +1312,10 @@ function SchedulingPanel({
                                 <th className="p-2 border-b border-slate-200 text-center">工作站</th>
                                 <th className="p-2 border-b border-slate-200 text-center">岗位</th>
                                 <th className="p-2 border-b border-slate-200 text-center">员工</th>
+                                <th className="p-2 border-b border-slate-200 text-center">报工方式</th>
+                                <th className="p-2 border-b border-slate-200 text-center text-emerald-900 bg-emerald-50/50">需求排产数量</th>
                                 <th className="p-2 border-b border-slate-200 text-center text-indigo-900 bg-indigo-50/50">计划开始时间</th>
                                 <th className="p-2 border-b border-slate-200 text-center text-indigo-900 bg-indigo-50/50">预计完成时间</th>
-                                <th className="p-2 border-b border-slate-200 text-center text-emerald-900 bg-emerald-50/50">需求排产数量</th>
                                 <th className="p-2 border-b border-slate-200 text-center">排产状态</th>
                                 <th className="p-2 border-b border-slate-200 text-center">操作</th>
                               </tr>
@@ -1288,33 +1330,37 @@ function SchedulingPanel({
                                   <td className="p-2 text-center text-slate-600">
                                     {plan.workCenterName || op.workCenter || '-'}
                                   </td>
-                                  <td className="p-2 text-center text-slate-600">
-                                    {plan.position || '操作工'}
-                                  </td>
-                                  <td className="p-2 text-center font-bold text-blue-700">
-                                    <input 
-                                      type="text" 
-                                      value={plan.employee || ''} 
-                                      onChange={(e) => updatePlanItem(key, { employee: e.target.value })}
-                                      className="w-20 text-center border border-slate-200 rounded px-1.5 py-0.5 focus:border-blue-500 outline-none"
+                                  <td className="p-2 text-center">
+                                    <ScheduleMultiSelect
+                                      value={plan.position || ''}
+                                      options={ALL_SCHEDULE_POSITIONS}
+                                      placeholder="选择岗位"
+                                      widthClass="w-[165px] mx-auto"
+                                      onChange={(nextPos, prevPos) => {
+                                        const currentEmps = parseMultiValue(plan.employee);
+                                        const res = applyPositionSelectionChange(nextPos, prevPos, currentEmps);
+                                        updatePlanItem(key, res);
+                                      }}
                                     />
                                   </td>
-                                  {/* Independent Start Time per material */}
-                                  <td className="p-2 text-center bg-indigo-50/20">
-                                    <input 
-                                      type="date" 
-                                      value={plan.plannedStartTime ? plan.plannedStartTime.split('T')[0] : ''} 
-                                      onChange={(e) => updatePlanItem(key, { plannedStartTime: e.target.value })}
-                                      className="w-28 text-center text-[11px] border border-indigo-200 rounded px-1 py-0.5 bg-white focus:border-indigo-500 outline-none text-slate-700"
+                                  <td className="p-2 text-center">
+                                    <ScheduleMultiSelect
+                                      value={plan.employee || ''}
+                                      options={ALL_SCHEDULE_EMPLOYEES.map(e => e.name)}
+                                      placeholder="选择员工"
+                                      widthClass="w-[155px] mx-auto"
+                                      onChange={(nextEmps, prevEmps) => {
+                                        const currentPos = parseMultiValue(plan.position);
+                                        const res = applyEmployeeSelectionChange(nextEmps, prevEmps, currentPos);
+                                        updatePlanItem(key, res);
+                                      }}
                                     />
                                   </td>
-                                  {/* Independent End Time per material */}
-                                  <td className="p-2 text-center bg-indigo-50/20">
-                                    <input 
-                                      type="date" 
-                                      value={plan.estimatedEndTime ? plan.estimatedEndTime.split('T')[0] : ''} 
-                                      onChange={(e) => updatePlanItem(key, { estimatedEndTime: e.target.value })}
-                                      className="w-28 text-center text-[11px] border border-indigo-200 rounded px-1 py-0.5 bg-white focus:border-indigo-500 outline-none text-slate-700"
+                                  {/* Reporting Type (left of Scheduled Quantity) */}
+                                  <td className="p-2 text-center">
+                                    <ReportingTypeSelect
+                                      value={plan.reportingType || op.reportingType || 'PIECE'}
+                                      onChange={(val) => updatePlanItem(key, { reportingType: val })}
                                     />
                                   </td>
                                   {/* Independent Quantity per material */}
@@ -1324,6 +1370,24 @@ function SchedulingPanel({
                                       value={plan.scheduledQuantity} 
                                       onChange={(e) => updatePlanItem(key, { scheduledQuantity: Math.max(1, parseInt(e.target.value) || 0) })}
                                       className="w-20 text-center font-bold font-mono text-emerald-800 border border-emerald-300 bg-white rounded px-1.5 py-0.5 outline-none focus:border-emerald-500"
+                                    />
+                                  </td>
+                                  {/* Independent Start Time per material */}
+                                  <td className="p-2 text-center bg-indigo-50/20">
+                                    <input 
+                                      type="date" 
+                                      value={plan.plannedStartTime ? plan.plannedStartTime.split('T')[0] : getTodayDateStr()} 
+                                      onChange={(e) => updatePlanItem(key, { plannedStartTime: e.target.value })}
+                                      className="w-28 text-center text-[11px] border border-indigo-200 rounded px-1 py-0.5 bg-white focus:border-indigo-500 outline-none text-slate-700"
+                                    />
+                                  </td>
+                                  {/* Independent End Time per material */}
+                                  <td className="p-2 text-center bg-indigo-50/20">
+                                    <input 
+                                      type="date" 
+                                      value={plan.estimatedEndTime ? plan.estimatedEndTime.split('T')[0] : getTodayDateStr()} 
+                                      onChange={(e) => updatePlanItem(key, { estimatedEndTime: e.target.value })}
+                                      className="w-28 text-center text-[11px] border border-indigo-200 rounded px-1 py-0.5 bg-white focus:border-indigo-500 outline-none text-slate-700"
                                     />
                                   </td>
                                   <td className="p-2 text-center">
@@ -1373,7 +1437,7 @@ function SchedulingPanel({
             ) : (
               <div className="bg-white border border-slate-200 rounded-lg shadow-xs overflow-hidden min-w-max">
                 <table className="w-full text-left border-collapse whitespace-nowrap">
-                  <thead className="bg-slate-50 sticky top-0 z-10 shadow-xs border-b border-slate-200">
+                  <thead className="bg-white sticky top-0 z-10 shadow-xs border-b border-slate-200">
                       <tr className="text-[12px] font-bold text-slate-500 tracking-wider">
                         {!readOnly && (
                         <th className="px-3 py-3.5 text-center w-10">
@@ -1387,12 +1451,12 @@ function SchedulingPanel({
                         )}
                         <th className="px-4 py-3.5 text-center">工序</th>
                         {!readOnly && <th className="px-4 py-3.5 text-center">物料信息</th>}
-                        <th className="px-4 py-3.5 text-center">报工方式</th>
                         <th className="px-4 py-3.5 text-center">工作站编码</th>
                         <th className="px-4 py-3.5 text-center">工作站名称</th>
                         <th className="px-4 py-3.5 text-center">设备</th>
                         <th className="px-4 py-3.5 text-center">岗位</th>
                         <th className="px-4 py-3.5 text-center">员工</th>
+                        <th className="px-4 py-3.5 text-center">报工方式</th>
                         <th className="px-4 py-3.5 text-center">计划排产数量</th>
                         <th className="px-4 py-3.5 text-center">已计划数量</th>
                         <th className="px-4 py-3.5 text-center">计划开始时间</th>
@@ -1444,19 +1508,11 @@ function SchedulingPanel({
                                  </td>
                                )}
 
-                               {/* Reporting Type */}
-                               <td className="px-4 py-4 text-center border-r border-slate-100">
-                                 <div className="flex flex-col items-center gap-1">
-                                    <span className="text-[11px] bg-slate-100 px-2 py-0.5 rounded text-slate-600 font-medium">
-                                      {op.reportingType === 'TIME' ? '计时' : '计件'}
-                                    </span>
-                                 </div>
-                               </td>
-
                                {/* Work Center Code */}
                                <td className="px-4 py-4 border-r border-slate-100">
                                   <input 
                                      type="text" 
+                                     disabled={readOnly}
                                      value={plan.workCenterCode || ''} 
                                      onChange={(e) => updatePlanItem(key, { workCenterCode: e.target.value })}
                                      placeholder="编码"
@@ -1467,6 +1523,7 @@ function SchedulingPanel({
                                <td className="px-4 py-4 border-r border-slate-100">
                                   <input 
                                      type="text" 
+                                     disabled={readOnly}
                                      value={plan.workCenterName || ''} 
                                      onChange={(e) => updatePlanItem(key, { workCenterName: e.target.value })}
                                      placeholder="名称"
@@ -1477,6 +1534,7 @@ function SchedulingPanel({
                                <td className="px-4 py-4 border-r border-slate-100">
                                   <input 
                                      type="text" 
+                                     disabled={readOnly}
                                      value={plan.equipmentName || ''} 
                                      onChange={(e) => updatePlanItem(key, { equipmentName: e.target.value })}
                                      placeholder="设备名"
@@ -1484,30 +1542,52 @@ function SchedulingPanel({
                                   />
                                </td>
 
-                               {/* Position & Employee */}
+                               {/* Position (Multi-select with auto-bring employees) */}
                                <td className="px-4 py-4 border-r border-slate-100">
-                                  <input 
-                                     type="text" 
-                                     value={plan.position || '操作工'} 
-                                     onChange={(e) => updatePlanItem(key, { position: e.target.value })}
-                                     placeholder="岗位"
-                                     className="w-[75px] mx-auto block text-[13px] text-center px-2 py-1.5 border border-transparent rounded bg-slate-50 hover:bg-white hover:border-slate-300 focus:bg-white focus:border-[#1677ff] outline-none transition-all placeholder:text-slate-300" 
+                                  <ScheduleMultiSelect
+                                    value={plan.position || ''}
+                                    options={ALL_SCHEDULE_POSITIONS}
+                                    placeholder="请选择岗位"
+                                    disabled={readOnly}
+                                    widthClass="w-[175px] mx-auto"
+                                    onChange={(nextPos, prevPos) => {
+                                      const currentEmps = parseMultiValue(plan.employee);
+                                      const res = applyPositionSelectionChange(nextPos, prevPos, currentEmps);
+                                      updatePlanItem(key, res);
+                                    }}
                                   />
                                </td>
+
+                               {/* Employee (Multi-select with auto-bring position) */}
                                <td className="px-4 py-4 border-r border-slate-100">
-                                  <input 
-                                     type="text" 
-                                     value={plan.employee || ''} 
-                                     onChange={(e) => updatePlanItem(key, { employee: e.target.value })}
-                                     placeholder="员工"
-                                     className="w-[85px] mx-auto block text-[13px] text-center px-2 py-1.5 border border-transparent rounded bg-slate-50 hover:bg-white hover:border-slate-300 focus:bg-white focus:border-[#1677ff] outline-none transition-all placeholder:text-slate-300 font-medium text-blue-700" 
+                                  <ScheduleMultiSelect
+                                    value={plan.employee || ''}
+                                    options={ALL_SCHEDULE_EMPLOYEES.map(e => e.name)}
+                                    placeholder="请选择员工"
+                                    disabled={readOnly}
+                                    widthClass="w-[160px] mx-auto"
+                                    onChange={(nextEmps, prevEmps) => {
+                                      const currentPos = parseMultiValue(plan.position);
+                                      const res = applyEmployeeSelectionChange(nextEmps, prevEmps, currentPos);
+                                      updatePlanItem(key, res);
+                                    }}
                                   />
+                               </td>
+
+                               {/* Reporting Type (Placed to the left of Scheduled Quantity, switchable) */}
+                               <td className="px-4 py-4 text-center border-r border-slate-100">
+                                 <ReportingTypeSelect
+                                   value={plan.reportingType || op.reportingType || 'PIECE'}
+                                   disabled={readOnly}
+                                   onChange={(val) => updatePlanItem(key, { reportingType: val })}
+                                 />
                                </td>
 
                                {/* Quantities */}
                                <td className="px-4 py-4 border-r border-slate-100 text-center">
                                   <input 
                                      type="number" 
+                                     disabled={readOnly}
                                      value={plan.scheduledQuantity} 
                                      onChange={(e) => updatePlanItem(key, { scheduledQuantity: Math.max(0, parseInt(e.target.value) || 0) })}
                                      className="w-[80px] mx-auto block font-mono text-[13px] text-center font-bold text-blue-700 px-2 py-1.5 border border-blue-200 bg-blue-50/50 hover:bg-white hover:border-blue-400 focus:bg-white focus:border-[#1677ff] outline-none rounded transition-all shadow-xs" 
@@ -1524,7 +1604,8 @@ function SchedulingPanel({
                                <td className="px-4 py-4 border-r border-slate-100">
                                   <input 
                                      type="date" 
-                                     value={plan.plannedStartTime ? plan.plannedStartTime.split('T')[0] : ''} 
+                                     disabled={readOnly}
+                                     value={plan.plannedStartTime ? plan.plannedStartTime.split('T')[0] : getTodayDateStr()} 
                                      onChange={(e) => updatePlanItem(key, { plannedStartTime: e.target.value })}
                                      className="w-[125px] mx-auto block text-[12px] text-center px-2 py-1.5 border border-transparent rounded bg-slate-50 hover:bg-white hover:border-slate-300 focus:bg-white focus:border-[#1677ff] outline-none transition-all text-slate-600" 
                                   />
@@ -1532,7 +1613,8 @@ function SchedulingPanel({
                                <td className="px-4 py-4 pr-8 border-r border-slate-100">
                                   <input 
                                      type="date" 
-                                     value={plan.estimatedEndTime ? plan.estimatedEndTime.split('T')[0] : ''} 
+                                     disabled={readOnly}
+                                     value={plan.estimatedEndTime ? plan.estimatedEndTime.split('T')[0] : getTodayDateStr()} 
                                      onChange={(e) => updatePlanItem(key, { estimatedEndTime: e.target.value })}
                                      className="w-[125px] mx-auto block text-[12px] text-center px-2 py-1.5 border border-transparent rounded bg-slate-50 hover:bg-white hover:border-slate-300 focus:bg-white focus:border-[#1677ff] outline-none transition-all text-slate-600" 
                                   />
@@ -1832,30 +1914,34 @@ function SchedulingPanel({
                                 </td>
                                 {/* 岗位 */}
                                 <td className="p-2">
-                                   <input 
-                                     type="text"
+                                   <ScheduleMultiSelect
                                      value={row.position}
-                                     onChange={(e) => {
-                                        const newRows = [...splitRows];
-                                        newRows[idx].position = e.target.value;
-                                        setSplitRows(newRows);
+                                     options={ALL_SCHEDULE_POSITIONS}
+                                     placeholder="选择岗位"
+                                     widthClass="w-[165px]"
+                                     onChange={(nextPos, prevPos) => {
+                                       const currentEmps = parseMultiValue(row.employee);
+                                       const res = applyPositionSelectionChange(nextPos, prevPos, currentEmps);
+                                       const newRows = [...splitRows];
+                                       newRows[idx] = { ...newRows[idx], ...res };
+                                       setSplitRows(newRows);
                                      }}
-                                     placeholder="操作工"
-                                     className="w-full px-2 py-1 border border-slate-200 rounded text-xs focus:border-blue-500 outline-none"
                                    />
                                 </td>
                                 {/* 指派员工 */}
                                 <td className="p-2">
-                                   <input 
-                                     type="text"
+                                   <ScheduleMultiSelect
                                      value={row.employee}
-                                     onChange={(e) => {
-                                        const newRows = [...splitRows];
-                                        newRows[idx].employee = e.target.value;
-                                        setSplitRows(newRows);
+                                     options={ALL_SCHEDULE_EMPLOYEES.map(e => e.name)}
+                                     placeholder="选择员工"
+                                     widthClass="w-[155px]"
+                                     onChange={(nextEmps, prevEmps) => {
+                                       const currentPos = parseMultiValue(row.position);
+                                       const res = applyEmployeeSelectionChange(nextEmps, prevEmps, currentPos);
+                                       const newRows = [...splitRows];
+                                       newRows[idx] = { ...newRows[idx], ...res };
+                                       setSplitRows(newRows);
                                      }}
-                                     placeholder="指派人员"
-                                     className="w-full px-2 py-1 border border-blue-200 bg-blue-50/30 text-blue-700 font-bold rounded text-xs focus:border-blue-500 outline-none"
                                    />
                                 </td>
                                 {/* 拆分排产数量 */}
@@ -1948,11 +2034,11 @@ function SchedulingPanel({
                                 workCenterCode: splitModalItem.op.workCenterCode || `WS-0${(splitRows.length % 5) + 1}`,
                                 workCenterName: `工作站${String.fromCharCode(65 + splitRows.length)}线`,
                                 equipmentName: `设备${splitRows.length + 1}#`, 
-                                position: '操作工',
-                                employee: '作业员', 
+                                position: '激光下料操作工',
+                                employee: '唐鸿运,王文源', 
                                 quantity: 1, 
-                                plannedStartTime: '2026-06-10',
-                                estimatedEndTime: '2026-06-10',
+                                plannedStartTime: getTodayDateStr(),
+                                estimatedEndTime: getTodayDateStr(),
                                 remark: '' 
                               }
                            ])}

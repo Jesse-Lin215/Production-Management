@@ -83,8 +83,7 @@ export default function OrderManagement({ onNewOrder, onOrderClick }: OrderManag
       const term = searchTerm.toLowerCase();
       const matchNo = order.no.toLowerCase().includes(term);
       const matchProd = order.product.toLowerCase().includes(term) || order.productCode.toLowerCase().includes(term);
-      const matchCust = (order.customer || '').toLowerCase().includes(term);
-      if (!matchNo && !matchProd && !matchCust) return false;
+      if (!matchNo && !matchProd) return false;
     }
 
     return true;
@@ -568,11 +567,6 @@ export default function OrderManagement({ onNewOrder, onOrderClick }: OrderManag
                              计划结束日期 <ChevronsUpDown className="w-3 h-3 text-slate-400" />
                           </div>
                        </th>
-                       <th className="px-4 py-3 sticky top-0 z-20 bg-slate-50">
-                          <div className="flex items-center gap-1">
-                             客户信息
-                          </div>
-                       </th>
                        <th className="px-4 py-3 w-[100px] min-w-[100px] sticky top-0 right-[60px] z-30 bg-slate-50 border-l border-slate-200/80 shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.06)]">
                           <div className="flex items-center gap-1">
                              单据状态 <Filter className="w-3 h-3 text-slate-400" />
@@ -725,7 +719,6 @@ export default function OrderManagement({ onNewOrder, onOrderClick }: OrderManag
 
                            <td className="px-4 py-3 font-mono text-slate-600">{order.plannedStart}</td>
                            <td className="px-4 py-3 font-mono text-slate-600">{order.plannedEnd}</td>
-                           <td className="px-4 py-3 text-slate-600">{order.customer || '-'}</td>
 
                            {/* Status Badge */}
                            <td className={cn(

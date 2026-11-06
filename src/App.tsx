@@ -5,16 +5,24 @@ import OrderWizard from './pages/OrderWizard';
 import OrderDetails from './pages/OrderDetails';
 import TaskDetails from './pages/TaskDetails';
 import ProductionTasks from './pages/ProductionTasks';
+import OutsourcingOrders from './pages/OutsourcingOrders';
+import OutsourcingWizard from './pages/OutsourcingWizard';
+import OutsourcingDetails from './pages/OutsourcingDetails';
+import OutsourcingApplications from './pages/OutsourcingApplications';
 
 type PageState = 
   | { type: 'list' }
   | { type: 'tasks' }
   | { type: 'wizard' }
   | { type: 'details', orderNo: string }
-  | { type: 'task-details', taskCode: string, taskData?: any, orderNo?: string, fromPage?: PageState };
+  | { type: 'task-details', taskCode: string, taskData?: any, orderNo?: string, fromPage?: PageState }
+  | { type: 'outsourcing-list' }
+  | { type: 'outsourcing-wizard', editOrderNo?: string | null, initialAppNo?: string | null }
+  | { type: 'outsourcing-details', orderNo: string }
+  | { type: 'outsourcing-apply' };
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState<PageState>({ type: 'list' });
+  const [currentPage, setCurrentPage] = useState<PageState>({ type: 'outsourcing-list' });
 
   const handleOpenTaskDetails = (taskCode: string, taskData?: any, orderNo?: string) => {
     setCurrentPage(prev => ({
@@ -26,7 +34,14 @@ export default function App() {
     }));
   };
 
-  const activeMenu: 'orders' | 'tasks' = currentPage.type === 'tasks' ? 'tasks' : 'orders';
+  const activeMenu: 'orders' | 'tasks' | 'outsourcing' | 'outsourcing-apply' = 
+    currentPage.type === 'tasks' 
+      ? 'tasks' 
+      : currentPage.type === 'outsourcing-apply'
+      ? 'outsourcing-apply'
+      : (currentPage.type === 'outsourcing-list' || currentPage.type === 'outsourcing-wizard' || currentPage.type === 'outsourcing-details')
+      ? 'outsourcing'
+      : 'orders';
 
   return (
     <MainLayout
@@ -34,8 +49,12 @@ export default function App() {
       onSelectMenu={(menu) => {
         if (menu === 'orders') {
           setCurrentPage({ type: 'list' });
-        } else {
+        } else if (menu === 'tasks') {
           setCurrentPage({ type: 'tasks' });
+        } else if (menu === 'outsourcing-apply') {
+          setCurrentPage({ type: 'outsourcing-apply' });
+        } else {
+          setCurrentPage({ type: 'outsourcing-list' });
         }
       }}
     >
@@ -58,6 +77,34 @@ export default function App() {
           orderNo={currentPage.orderNo} 
           onBack={() => setCurrentPage({ type: 'list' })} 
           onTaskClick={(taskCode, task) => handleOpenTaskDetails(taskCode, task, currentPage.orderNo)}
+        />
+      ) : currentPage.type === 'outsourcing-list' ? (
+        <OutsourcingOrders
+          onNewOrder={() => setCurrentPage({ type: 'outsourcing-wizard', editOrderNo: null })}
+          onEditOrder={(no) => setCurrentPage({ type: 'outsourcing-wizard', editOrderNo: no })}
+          onOrderClick={(no) => setCurrentPage({ type: 'outsourcing-details', orderNo: no })}
+          onNavigateOrders={() => setCurrentPage({ type: 'list' })}
+        />
+      ) : currentPage.type === 'outsourcing-wizard' ? (
+        <OutsourcingWizard
+          editOrderNo={currentPage.editOrderNo}
+          initialAppNo={currentPage.initialAppNo}
+          onBack={() => setCurrentPage({ type: 'outsourcing-list' })}
+          onSaved={() => setCurrentPage({ type: 'outsourcing-list' })}
+          onNavigateOrders={() => setCurrentPage({ type: 'list' })}
+        />
+      ) : currentPage.type === 'outsourcing-details' ? (
+        <OutsourcingDetails
+          orderNo={currentPage.orderNo}
+          onBack={() => setCurrentPage({ type: 'outsourcing-list' })}
+          onEditOrder={(no) => setCurrentPage({ type: 'outsourcing-wizard', editOrderNo: no })}
+          onNavigateOrders={() => setCurrentPage({ type: 'list' })}
+        />
+      ) : currentPage.type === 'outsourcing-apply' ? (
+        <OutsourcingApplications
+          onNavigateOrders={() => setCurrentPage({ type: 'list' })}
+          onNavigateOutsourcing={() => setCurrentPage({ type: 'outsourcing-list' })}
+          onConvertToOrder={(appNo) => setCurrentPage({ type: 'outsourcing-wizard', editOrderNo: null, initialAppNo: appNo })}
         />
       ) : (
         <TaskDetails 

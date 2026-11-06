@@ -289,7 +289,7 @@ export default function RoutingEditor({ node, onChange, readOnly }: RoutingEdito
   const [dragOverBlockId, setDragOverBlockId] = useState<string | null>(null);
 
   return (
-    <div className="flex flex-col h-full bg-slate-50/40">
+    <div className="flex flex-col h-full bg-white">
       
       {/* Premium Header: Strictly displays the material info, with zero prefixes */}
       <div className="bg-white border-b border-slate-200 px-5 py-3 flex items-center justify-between shrink-0 shadow-xs">
@@ -388,7 +388,7 @@ export default function RoutingEditor({ node, onChange, readOnly }: RoutingEdito
               <div className={cn("bg-white rounded-xl border border-slate-200 shadow-2xs overflow-x-auto select-none", readOnly && "pointer-events-none opacity-80 cursor-not-allowed")}>
                 <div className="min-w-[900px]">
                   {/* Table Header */}
-                  <div className="px-5 py-2.5 border-b border-slate-150 bg-slate-50/40 text-[11px] font-bold text-slate-400 uppercase tracking-wider grid grid-cols-[80px_1.2fr_1.8fr_1.5fr_110px_110px_1.5fr_60px] gap-3 items-center shrink-0 text-center">
+                  <div className="px-5 py-2.5 border-b border-slate-200 bg-white text-[11px] font-bold text-slate-500 uppercase tracking-wider grid grid-cols-[80px_1.2fr_1.8fr_1.5fr_110px_110px_1.5fr_60px] gap-3 items-center shrink-0 text-center">
                     <div>序号</div>
                     <div>工序编码</div>
                     <div>工序名称</div>
@@ -559,9 +559,9 @@ export default function RoutingEditor({ node, onChange, readOnly }: RoutingEdito
 
         {/* TAB 2: 工序依赖结构 (Native highly precise fluid layouts with 100% drag and drop) */}
         {activeTab === 'dependency' && (
-          <div className="flex-1 flex flex-col min-h-0 bg-slate-50/20">
+          <div className="flex-1 flex flex-col min-h-0 bg-white">
             {/* 顶层提示语横幅：详细解释工序依赖结构页面的功能与使用指南 */}
-            <div className="mx-3 mt-3 px-3.5 py-2.5 bg-blue-50/80 border border-blue-200/80 rounded-xl flex items-start gap-2.5 text-xs text-blue-900 shrink-0 shadow-2xs">
+            <div className="mx-3 mt-3 px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl flex items-start gap-2.5 text-xs text-slate-700 shrink-0 shadow-xs">
               <Info className="w-4 h-4 text-[#1677ff] shrink-0 mt-0.5" />
               <div className="flex-1 flex flex-col md:flex-row md:items-center justify-between gap-1 leading-snug">
                 <div>
@@ -728,14 +728,14 @@ export default function RoutingEditor({ node, onChange, readOnly }: RoutingEdito
 
                           {/* Block Zone Panel */}
                           <div className={cn(
-                            "border rounded-xl transition-all duration-200 bg-[#fbfcfd]/60",
+                            "border rounded-xl transition-all duration-200 bg-white",
                             isHovered 
-                              ? "border-blue-500 bg-blue-50/20 shadow-xs scale-[1.005] ring-2 ring-blue-100" 
-                              : "border-slate-200 shadow-3xs hover:border-slate-300"
+                              ? "border-blue-500 shadow-sm scale-[1.005] ring-2 ring-blue-100" 
+                              : "border-slate-200 shadow-xs hover:border-slate-300"
                           )}>
                             
                             {/* Block Header Toolbar */}
-                            <div className="px-3.5 py-2 bg-[#f4f6f8] border-b border-slate-150 rounded-t-xl flex items-center justify-between gap-4 text-xs">
+                            <div className="px-3.5 py-2 bg-white border-b border-slate-200 rounded-t-xl flex items-center justify-between gap-4 text-xs">
                               <div className="flex items-center gap-2">
                                 <span className="w-4 h-4 rounded-full bg-blue-500 text-white text-[10px] font-extrabold flex items-center justify-center select-none shadow-3xs">
                                   {blockNumber}
@@ -748,7 +748,7 @@ export default function RoutingEditor({ node, onChange, readOnly }: RoutingEdito
                                     并行组 · {block.operations.length}道工序
                                   </span>
                                 ) : (
-                                  <span className="text-[9px] bg-slate-100 text-slate-500 border border-slate-200 font-bold px-1.5 py-0.25 rounded-full">
+                                  <span className="text-[9px] bg-white text-slate-500 border border-slate-200 font-bold px-1.5 py-0.25 rounded-full">
                                     串行
                                   </span>
                                 )}
@@ -770,7 +770,7 @@ export default function RoutingEditor({ node, onChange, readOnly }: RoutingEdito
                             {/* Drop card area */}
                             <div className="p-3 bg-white rounded-b-xl min-h-[52px] flex flex-col justify-center">
                               {block.operations.length === 0 ? (
-                                <div className="py-3 flex items-center justify-center gap-1.5 text-[10px] text-slate-400 border border-dashed border-slate-200 rounded-lg bg-slate-50/30">
+                                <div className="py-3 flex items-center justify-center gap-1.5 text-[10px] text-slate-400 border border-dashed border-slate-200 rounded-lg bg-white">
                                   <span className="font-medium text-slate-500">将左侧工序卡片拖拽到此处添加</span>
                                 </div>
                               ) : (
